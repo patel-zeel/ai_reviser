@@ -8,4 +8,4 @@
 
 # Example
 
-![](ai_reviser.png)
+![](ai_revisor.png)
