@@ -97,7 +97,7 @@ groq_models = [
 ]
 
 with st.sidebar:
-    model = st.selectbox("Groq Model", groq_models)
+    model = st.selectbox("Groq Model", groq_models, index=1)
     st.text_area("System Prompt", value=system_prompt, height=500, disabled=True)
 
 api_key = read_api_key("./groq_api.txt")
