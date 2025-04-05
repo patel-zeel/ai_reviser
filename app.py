@@ -1,5 +1,5 @@
 import streamlit as st
-from difflib import SequenceMatcher
+import difflib
 import os
 
 # ---------- CONFIG ----------
@@ -28,21 +28,24 @@ def post_process_groq(text: str) -> str:
     return text.strip()
 
 
-def generate_diff_html(left: str, right: str) -> str:
-    sm = SequenceMatcher(None, left, right)
-    html = '<div style="font-family:monospace; line-height:1.6;">'
+import difflib
+
+def word_diff(left: str, right: str) -> str:
+    left_words = left.split()
+    right_words = right.split()
+    sm = difflib.SequenceMatcher(None, left_words, right_words)
+    result = []
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
         if tag == 'equal':
-            html += f"<span style='background-color:#f0f0f0; color:#555;'>{left[i1:i2]}</span>"
-        elif tag == 'delete':
-            html += f"<span style='background-color:#ffdddd; color:#a00; text-decoration:line-through;'>{left[i1:i2]}</span>"
-        elif tag == 'insert':
-            html += f"<span style='background-color:#ddffdd; color:#0a0;'>{right[j1:j2]}</span>"
+            result.extend(left_words[i1:i2])
         elif tag == 'replace':
-            html += f"<span style='background-color:#ffdddd; color:#a00; text-decoration:line-through;'>{left[i1:i2]}</span>"
-            html += f"<span style='background-color:#ddffdd; color:#0a0;'>{right[j1:j2]}</span>"
-    html += "</div>"
-    return html
+            result.extend([f"<del>{w}</del>" for w in left_words[i1:i2]])
+            result.extend([f"<ins>{w}</ins>" for w in right_words[j1:j2]])
+        elif tag == 'delete':
+            result.extend([f"<del>{w}</del>" for w in left_words[i1:i2]])
+        elif tag == 'insert':
+            result.extend([f"<ins>{w}</ins>" for w in right_words[j1:j2]])
+    return " ".join(result)
 
 from openai import OpenAI
 
@@ -64,7 +67,7 @@ def call_groq(api_key: str, model: str, system_prompt: str, user_text: str) -> s
 # ---------- UI ----------
 
 st.set_page_config(layout="wide")
-st.title("🧠 AI Text Improver with Diff")
+st.title("🧠 AI Revisor")
 
 groq_models = [
     "allam-2-7b",
@@ -89,7 +92,7 @@ groq_models = [
 
 with st.sidebar:
     model = st.selectbox("Groq Model", groq_models)
-    st.text_area("System Prompt", value=system_prompt, height=250, disabled=True)
+    st.text_area("System Prompt", value=system_prompt, height=500, disabled=True)
 
 api_key = read_api_key("./groq_api.txt")
 
@@ -105,7 +108,19 @@ if st.button("Submit"):
             processed_ai_text = post_process_groq(ai_text)
 
             if ai_text:
-                st.text_area("AI Output", value=ai_text, height=250, disabled=True)
+                st.markdown("### AI's Revision:")
+                st.text_area("", value=processed_ai_text, height=250, disabled=True)
                 st.markdown("### AI's additions and deletions:")
-                diff_html = generate_diff_html(user_text, processed_ai_text)
-                st.markdown(diff_html, unsafe_allow_html=True)
+                diff_html = word_diff(user_text, processed_ai_text)
+                st.markdown(
+                    f"""
+                    <style>
+                    del {{ background-color: #fbb6b6; text-decoration: line-through; padding: 2px; }}
+                    ins {{ background-color: #b6fbb6; text-decoration: none; padding: 2px; }}
+                    </style>
+                    <div style='font-family: monospace; line-height: 1.6'>{diff_html}</div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.markdown("### Raw AI Output:")
+                st.text_area("", value=ai_text, height=250, disabled=True)
