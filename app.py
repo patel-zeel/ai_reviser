@@ -73,7 +73,7 @@ def call_groq(api_key: str, model: str, system_prompt: str, user_text: str) -> s
 # ---------- UI ----------
 
 st.set_page_config(layout="wide")
-st.title("🧠 AI Revisor")
+st.title("🧠 AI Reviser")
 
 groq_models = [
     "allam-2-7b",
