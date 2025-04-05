@@ -1,3 +1,4 @@
+import html
 import streamlit as st
 import difflib
 import os
@@ -35,17 +36,22 @@ def word_diff(left: str, right: str) -> str:
     right_words = right.split()
     sm = difflib.SequenceMatcher(None, left_words, right_words)
     result = []
+
     for tag, i1, i2, j1, j2 in sm.get_opcodes():
         if tag == 'equal':
             result.extend(left_words[i1:i2])
         elif tag == 'replace':
-            result.extend([f"<del>{w}</del>" for w in left_words[i1:i2]])
-            result.extend([f"<ins>{w}</ins>" for w in right_words[j1:j2]])
+            if i2 > i1:
+                result.append(f"<del>{' '.join(left_words[i1:i2])}</del>")
+            if j2 > j1:
+                result.append(f"<ins>{' '.join(right_words[j1:j2])}</ins>")
         elif tag == 'delete':
-            result.extend([f"<del>{w}</del>" for w in left_words[i1:i2]])
+            result.append(f"<del>{' '.join(left_words[i1:i2])}</del>")
         elif tag == 'insert':
-            result.extend([f"<ins>{w}</ins>" for w in right_words[j1:j2]])
+            result.append(f"<ins>{' '.join(right_words[j1:j2])}</ins>")
+
     return " ".join(result)
+
 
 from openai import OpenAI
 
@@ -109,7 +115,8 @@ if st.button("Submit"):
 
             if ai_text:
                 st.markdown("### AI's Revision:")
-                st.text_area("", value=processed_ai_text, height=250, disabled=True)
+                escaped_processed_ai_text = html.escape(processed_ai_text)
+                st.markdown(f"<pre style='white-space: pre-wrap;'>{escaped_processed_ai_text}</pre>", unsafe_allow_html=True)
                 st.markdown("### AI's additions and deletions:")
                 diff_html = word_diff(user_text, processed_ai_text)
                 st.markdown(
@@ -123,4 +130,6 @@ if st.button("Submit"):
                     unsafe_allow_html=True,
                 )
                 st.markdown("### Raw AI Output:")
-                st.text_area("", value=ai_text, height=250, disabled=True)
+                
+                escaped_ai_text = html.escape(ai_text)
+                st.markdown(f"<pre style='white-space: pre-wrap;'>{escaped_ai_text}</pre>", unsafe_allow_html=True)

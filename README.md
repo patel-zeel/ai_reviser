@@ -5,3 +5,7 @@
 1. Add your system prompt in `system_prompt.txt`.
 1. Install missing libraries/dependencies yourself.
 1. Run the script with `streamlit run app.py`.
+
+# Example
+
+![](ai_reviser.png)
