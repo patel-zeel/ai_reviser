@@ -55,7 +55,7 @@ def word_diff(left: str, right: str) -> str:
 
 from openai import OpenAI
 
-def call_groq(api_key: str, model: str, system_prompt: str, user_text: str) -> str:
+def call_groq(api_key: str, model: str, system_prompt: str, user_text: str, temperature: int) -> str:
     client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
     try:
         response = client.chat.completions.create(
@@ -63,7 +63,8 @@ def call_groq(api_key: str, model: str, system_prompt: str, user_text: str) -> s
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_text},
-            ]
+            ],
+            temperature=temperature,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
@@ -80,6 +81,7 @@ with open("groq_models.txt") as f:
 
 with st.sidebar:
     model = st.selectbox("Groq Model", groq_models, index=1)
+    temperature = st.number_input("Temperature", value=0.0)
     st.text_area("System Prompt", value=system_prompt, height=500, disabled=True)
 
 api_key = read_api_key("./groq_api.txt")
@@ -92,7 +94,7 @@ if st.button("Submit"):
         st.warning("Invalid API key.")
     else:
         with st.spinner("Calling Groq..."):
-            ai_text = call_groq(api_key, model, system_prompt, user_text)
+            ai_text = call_groq(api_key, model, system_prompt, user_text, temperature)
             processed_ai_text = post_process_groq(ai_text)
 
             if ai_text:
